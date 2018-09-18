@@ -12,6 +12,8 @@ import android.widget.ProgressBar;
 
 public class LoginActivityJava extends AppCompatActivity {
 
+    public static String MY_KEY = "asdf";
+
     private EditText usernameEditText;
 
     private EditText passwordEditText;
