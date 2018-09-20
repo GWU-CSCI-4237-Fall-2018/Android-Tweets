@@ -1,9 +1,11 @@
 package com.gwu.android.androidtweets
 
+import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -31,7 +33,12 @@ class LoginActivity : AppCompatActivity() {
         usernameEditText.addTextChangedListener(textWatcher)
         passwordEditText.addTextChangedListener(textWatcher)
 
-        loginButton.setOnClickListener { progressBar.visibility = View.VISIBLE }
+        loginButton.setOnClickListener {
+            val intent = Intent(this, TweetsActivity::class.java).apply {
+                putExtra(TweetsActivity.INTENT_KEY_LOCATION, "Washington D.C.")
+            }
+            startActivity(intent)
+        }
     }
 
     private val textWatcher = object : TextWatcher {
