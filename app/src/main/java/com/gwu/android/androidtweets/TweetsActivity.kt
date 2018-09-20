@@ -85,7 +85,7 @@ class TweetsActivity : AppCompatActivity() {
             handle = "@droidconSF",
             content = "Drum roll please.. Announcing droidcon SF 2018! November 19-20 @ Mission Bay Conference Center. Content and programming by @tsmith & @joenrv.",
             iconUrl = "https://...."
-        ),
         )
+    )
 
 }
