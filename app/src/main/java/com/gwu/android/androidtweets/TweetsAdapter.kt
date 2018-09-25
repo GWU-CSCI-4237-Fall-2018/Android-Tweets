@@ -8,20 +8,28 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 
-// 1. ViewHolder to hold references to views (done)
-// 2. Extend the Adapter class (done)
-// 3. Implement the Adapter methods
+/**
+ * Adapts our list of Tweet model objects to a list of rows on the UI.
+ * https://developer.android.com/guide/topics/ui/layout/recyclerview
+ */
 class TweetsAdapter(
     private val tweets: List<Tweet>,
     private val rowClickListener: OnRowClickListener
 ) : RecyclerView.Adapter<TweetsAdapter.ViewHolder>() {
 
+    /**
+     * Used for the Activity to receive callbacks when a row is clicked.
+     * You can also do this by having the Activity pass a lambda instead:
+     *      private val rowClickListener: (Tweet) -> Unit
+     */
     interface OnRowClickListener {
         fun onRowItemClicked(tweet: Tweet)
     }
 
-    // RecyclerView wants to render a new row that hasn't been created before
-    // Load the XML layout and return a ViewHolder
+    /**
+     * List is ready to render a new row that hasn't been created before. Load (inflate)
+     * the XML layout and return a [ViewHolder].
+     */
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         // Inflater is an object that loads & parses XML, you get it from a Context
         val view: View = LayoutInflater.from(parent.context)
@@ -29,13 +37,18 @@ class TweetsAdapter(
         return ViewHolder(view)
     }
 
-    // How many total rows to render in your list
+    /**
+     * How many total rows to render in your list.
+     */
     override fun getItemCount(): Int {
         return tweets.size
     }
 
-    // List is ready to render a row at position and it gives you the ViewHolder
-    // So you just fill it with content
+    /**
+     * The list is ready to render a new row at [position]. It gives you the [ViewHolder]
+     * either created from [onCreateViewHolder] or recycled from a row that scrolled offscreen.
+     * So, you need to set up the content of the row's UI based on corresponding [Tweet].
+     */
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val currentTweet = tweets[position]
         holder.usernameTextView.text = currentTweet.username
@@ -47,6 +60,9 @@ class TweetsAdapter(
         }
     }
 
+    /**
+     * Holds a reference to the views of a row that has already been loaded (inflated) from XML.
+     */
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
         val cardView: CardView = view.findViewById(R.id.cardView)
