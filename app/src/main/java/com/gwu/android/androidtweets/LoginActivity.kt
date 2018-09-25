@@ -1,5 +1,6 @@
 package com.gwu.android.androidtweets
 
+import android.content.Context
 import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
@@ -25,6 +26,9 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
+        // Get a SharedPreferences object
+        val preferences = getSharedPreferences("android-tweets", Context.MODE_PRIVATE)
+
         usernameEditText = findViewById(R.id.username)
         passwordEditText = findViewById(R.id.password)
         loginButton = findViewById(R.id.login)
@@ -33,7 +37,15 @@ class LoginActivity : AppCompatActivity() {
         usernameEditText.addTextChangedListener(textWatcher)
         passwordEditText.addTextChangedListener(textWatcher)
 
+        // Recall the saved username (or default to empty string)
+        val savedUsername: String = preferences.getString("SAVED_USERNAME", "")
+        usernameEditText.setText(savedUsername)
+
         loginButton.setOnClickListener {
+            // Save the inputted username (usually would be controlled by a Switch)
+            val username = usernameEditText.text.toString()
+            preferences.edit().putString("SAVED_USERNAME", username).apply()
+
             val intent = Intent(this, TweetsActivity::class.java).apply {
                 putExtra(TweetsActivity.INTENT_KEY_LOCATION, "Washington D.C.")
             }
