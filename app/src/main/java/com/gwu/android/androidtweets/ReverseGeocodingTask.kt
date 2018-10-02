@@ -4,36 +4,44 @@ import android.content.Context
 import android.location.Address
 import android.location.Geocoder
 import android.os.AsyncTask
-import android.widget.Toast
 import com.google.android.gms.maps.model.LatLng
-import java.util.*
 
+/**
+ * Retrieves an [Address] for a given [LatLng]. Reverse geocoding is performed on a background thread.
+ * If successful, [onSuccessListener] will be invoked, otherwise [onErrorListener] will be invoked.
+ */
 class ReverseGeocodingTask(
-    private val context: Context,
-    private val resultListener: (Address?) -> Unit
+    context: Context,
+    private val onSuccessListener: (Address) -> Unit,
+    private val onErrorListener: (Exception) -> Unit
 ) : AsyncTask<LatLng, Void, Address?>() {
 
-    // Step 2: Runs this on a background thread
+    private val geocoder = Geocoder(context)
+
+    /**
+     * Executed on a background thread -- perform reverse geocoding.
+     */
     override fun doInBackground(vararg params: LatLng): Address? {
+        // We will only ever geocode one LatLng at a time, but the doInBackground param is required
+        // to be a vararg.
         val firstLatLng = params[0]
 
-        // Invoke the geocoder
-        val geocoder = Geocoder(context, Locale.getDefault())
-        val results: List<Address> = geocoder.getFromLocation(
-            firstLatLng.latitude,
-            firstLatLng.longitude,
-            10
-        )
-
-        if (results.isEmpty()) {
-            return null
-        } else {
-            return results[0]
+        // Geocoder can have issues on an emulator
+        // https://issuetracker.google.com/issues/64418751
+        return try {
+            // Perform reverse geocoding, we only care about the 1st result.
+            val results = geocoder.getFromLocation(firstLatLng.latitude, firstLatLng.longitude, 1)
+            if (results.isEmpty()) null else results[0]
+        } catch (exception: Exception) {
+            null
         }
     }
 
+    /**
+     * Executed on the UI thread. Invoke the appropriate listener.
+     */
     override fun onPostExecute(result: Address?) {
-        super.onPostExecute(result)
-        resultListener.invoke(result)
+        if (result != null) onSuccessListener.invoke(result)
+        else onErrorListener.invoke(Exception("Failed to reverse geocode the location!"))
     }
 }

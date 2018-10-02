@@ -37,8 +37,7 @@
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name=".ChooseLocationActivity"
-            android:label="@string/title_activity_choose_location"/>
+            android:name=".ChooseLocationActivity" />
     </application>
 
 </manifest>
