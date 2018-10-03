@@ -4,4 +4,7 @@
     <string name="username">Username</string>
     <string name="password">Password</string>
     <string name="tweet_title">Android Tweets near %1$s</string>
+    <string name="choose_location_button_default">Long Press on the Map!"</string>
+    <string name="welcome_name">Welcome, %1$s</string>
+    <string name="no_address_found">Failed to retrieve address for location</string>
 </resources>
