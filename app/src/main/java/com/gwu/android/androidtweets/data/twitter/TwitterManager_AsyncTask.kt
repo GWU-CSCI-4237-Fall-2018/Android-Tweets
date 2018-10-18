@@ -15,6 +15,8 @@ import java.util.concurrent.TimeUnit
  * of the enqueue function to execute network requests synchronously.
  *
  * Callbacks are made on the UI thread, thanks to the AsyncTask's functionality.
+ *
+ * You can also substitute Retrofit for OkHttp and Moshi for org.json.* in a similar manner.
  */
 class TwitterManager_AsyncTask(
     private val successCallback: (List<Tweet>) -> Unit,
