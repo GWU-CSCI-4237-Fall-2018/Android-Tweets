@@ -1,4 +1,4 @@
-package com.gwu.android.androidtweets;
+package com.gwu.android.androidtweets.ui.login;
 
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -9,6 +9,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+
+import com.gwu.android.androidtweets.R;
 
 public class LoginActivityJava extends AppCompatActivity {
 

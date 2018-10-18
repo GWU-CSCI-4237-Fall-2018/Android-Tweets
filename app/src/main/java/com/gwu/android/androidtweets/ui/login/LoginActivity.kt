@@ -1,4 +1,4 @@
-package com.gwu.android.androidtweets
+package com.gwu.android.androidtweets.ui.login
 
 import android.content.Context
 import android.content.Intent
@@ -6,11 +6,11 @@ import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
-import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ProgressBar
+import com.gwu.android.androidtweets.ui.maps.ChooseLocationActivity
+import com.gwu.android.androidtweets.R
 
 class LoginActivity : AppCompatActivity() {
 

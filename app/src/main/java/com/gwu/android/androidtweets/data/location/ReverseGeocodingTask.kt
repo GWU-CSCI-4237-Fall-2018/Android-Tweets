@@ -1,4 +1,4 @@
-package com.gwu.android.androidtweets
+package com.gwu.android.androidtweets.data.location
 
 import android.content.Context
 import android.location.Address

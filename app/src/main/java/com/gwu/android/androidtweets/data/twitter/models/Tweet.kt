@@ -1,4 +1,4 @@
-package com.gwu.android.androidtweets
+package com.gwu.android.androidtweets.data.twitter.models
 
 data class Tweet(
     val username: String,

@@ -1,4 +1,4 @@
-package com.gwu.android.androidtweets
+package com.gwu.android.androidtweets.ui.maps
 
 import android.content.Intent
 import android.location.Address
@@ -17,6 +17,9 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.gwu.android.androidtweets.R
+import com.gwu.android.androidtweets.data.location.ReverseGeocodingTask
+import com.gwu.android.androidtweets.ui.tweets.TweetsActivity
 
 class ChooseLocationActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -86,11 +89,12 @@ class ChooseLocationActivity : AppCompatActivity(), OnMapReadyCallback {
         map.setOnMapLongClickListener { latLng: LatLng ->
             // Create our AsyncTask to do reverse geocoding, passing it callbacks which execute
             // depending on the geocoding result
-            val reverseGeocodingTask = ReverseGeocodingTask(
-                context = this,
-                onSuccessListener = { address -> handleGeocodingSuccess(address) },
-                onErrorListener = { handleGeocodingError() }
-            )
+            val reverseGeocodingTask =
+                ReverseGeocodingTask(
+                    context = this,
+                    onSuccessListener = { address -> handleGeocodingSuccess(address) },
+                    onErrorListener = { handleGeocodingError() }
+                )
 
             // Start the task, passing it the LatLng where the user clicked
             progress.visibility = View.VISIBLE
@@ -146,8 +150,12 @@ class ChooseLocationActivity : AppCompatActivity(), OnMapReadyCallback {
      */
     private fun updateConfirmButton(address: Address) {
         // Grab a color & drawable from the res folder.
-        val greenColor = ContextCompat.getColor(this, R.color.button_green)
-        val checkIcon = ContextCompat.getDrawable(this, R.drawable.ic_check_white)
+        val greenColor = ContextCompat.getColor(this,
+            R.color.button_green
+        )
+        val checkIcon = ContextCompat.getDrawable(this,
+            R.drawable.ic_check_white
+        )
 
 
         confirm.setBackgroundColor(greenColor)

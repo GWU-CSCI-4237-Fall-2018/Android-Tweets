@@ -1,4 +1,4 @@
-package com.gwu.android.androidtweets
+package com.gwu.android.androidtweets.ui.tweets
 
 import android.support.v7.widget.CardView
 import android.support.v7.widget.RecyclerView
@@ -7,6 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import com.gwu.android.androidtweets.R
+import com.gwu.android.androidtweets.data.twitter.models.Tweet
 
 /**
  * Adapts our list of Tweet model objects to a list of rows on the UI.
