@@ -1,4 +1,4 @@
-package com.gwu.android.androidtweets.ui.ui.maps
+package com.gwu.android.androidtweets.ui.maps
 
 import android.content.Intent
 import android.location.Address

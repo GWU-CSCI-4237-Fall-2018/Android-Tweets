@@ -9,7 +9,7 @@ import android.text.TextWatcher
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ProgressBar
-import com.gwu.android.androidtweets.ui.ui.maps.ChooseLocationActivity
+import com.gwu.android.androidtweets.ui.maps.ChooseLocationActivity
 import com.gwu.android.androidtweets.R
 
 class LoginActivity : AppCompatActivity() {

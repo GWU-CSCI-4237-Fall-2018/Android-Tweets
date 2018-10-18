@@ -56,7 +56,6 @@ class TwitterManager_OkHttp_Moshi {
         val combinedKey =
             "bFdLdGZTMWJmeUlTeWlyWEsyck43N2NQMzpXZXpRaGsxZnhFaElFbTN2MWQ0T291SmwwQkNvTlh0d2F4dzJPSmZhN3NvRERVcHg5Tg=="
 
-        // Step 2 - Construct the request
         val request = Request.Builder()
             .url("https://api.twitter.com/oauth2/token")
             .header("Authorization", "Basic $combinedKey")
