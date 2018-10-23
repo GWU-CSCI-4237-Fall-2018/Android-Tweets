@@ -4,6 +4,7 @@ import android.content.Context
 import android.location.Address
 import android.location.Geocoder
 import android.os.AsyncTask
+import android.util.Log
 import com.google.android.gms.maps.model.LatLng
 
 /**
@@ -33,6 +34,8 @@ class ReverseGeocodingTask(
             val results = geocoder.getFromLocation(firstLatLng.latitude, firstLatLng.longitude, 1)
             if (results.isEmpty()) null else results[0]
         } catch (exception: Exception) {
+            exception.printStackTrace()
+            Log.d("Geocoding", "Geocoding failed: ${exception.message}")
             null
         }
     }

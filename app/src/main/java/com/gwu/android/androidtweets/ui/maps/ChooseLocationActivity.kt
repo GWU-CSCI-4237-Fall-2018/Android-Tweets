@@ -1,15 +1,21 @@
 package com.gwu.android.androidtweets.ui.maps
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.location.Address
+import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.Toast
+import com.google.android.gms.location.*
 
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -37,6 +43,8 @@ class ChooseLocationActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var progress: ProgressBar
 
+    private lateinit var locationProvider: FusedLocationProviderClient
+
     private var currentAddress: Address? = null
 
     /**
@@ -46,6 +54,8 @@ class ChooseLocationActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_choose_location)
+
+        locationProvider = LocationServices.getFusedLocationProviderClient(this)
 
         // Retrieve the username out of the intent, use it to set the title
         val username = intent.getStringExtra(INTENT_KEY_USERNAME)
@@ -71,6 +81,81 @@ class ChooseLocationActivity : AppCompatActivity(), OnMapReadyCallback {
                 intent.putExtra(TweetsActivity.INTENT_KEY_LOCATION, address)
                 startActivity(intent)
             }
+        }
+
+        userLocation.setOnClickListener {
+            // Do I already have the permission?
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+                // Permission is already granted, we can check the location
+                determineCurrentLocation()
+            } else {
+                // Permission has not been granted, try to request the permission
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                        200
+                    )
+                }
+            }
+        }
+    }
+
+    @SuppressLint("NewApi")
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        // The same code above to request the permissions
+        if (requestCode == 200) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // User granted the permission, we can check their location
+                determineCurrentLocation()
+            } else {
+                // User denied the permission
+                if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    // Do nothing, user declined, but can be prompted again later
+                } else {
+                    // User has denied & don't show again, so they'll have to go into Settings to fix it
+                    Toast.makeText(this, "Please go into the Settings for this app and enable the Location permission.", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun determineCurrentLocation() {
+        locationProvider.requestLocationUpdates(
+            LocationRequest.create(),
+            locationCallback,
+            null
+        )
+    }
+
+    private val locationCallback = object : LocationCallback() {
+
+        override fun onLocationResult(result: LocationResult) {
+            // Most recent location
+            val location = result.locations[0]
+            val latLng = LatLng(location.latitude, location.longitude)
+
+            // We only need a single update (one callback), so unsubscribe now
+            locationProvider.removeLocationUpdates(this)
+
+            val reverseGeocodingTask =
+                ReverseGeocodingTask(
+                    context = this@ChooseLocationActivity,
+                    onSuccessListener = { address -> handleGeocodingSuccess(address) },
+                    onErrorListener = { handleGeocodingError() }
+                )
+
+            progress.visibility = View.VISIBLE
+            reverseGeocodingTask.execute(latLng)
         }
     }
 
