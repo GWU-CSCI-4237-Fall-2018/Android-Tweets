@@ -21,7 +21,11 @@ class TweetsActivity : AppCompatActivity(),
         val INTENT_KEY_LOCATION = "LOCATION_NAME"
     }
 
+    private val BUNDLE_KEY_TWEETS_LIST = "TWEETS_LIST"
+
     private lateinit var recyclerView: RecyclerView
+
+    private val currentTweetsList: MutableList<Tweet> = mutableListOf()
 
     /**
      * Called when the Activity is being rendered for the first time, but before anything is
@@ -40,24 +44,52 @@ class TweetsActivity : AppCompatActivity(),
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        TwitterManager_Retrofit_Moshi().retrieveTweets(
-            address = address,
-            successCallback = { tweetsList ->
-                // runOnUiThread is required if we're using OkHttp. Not needed
-                // for Retrofit or AsyncTask.
-                runOnUiThread {
-                    recyclerView.adapter =
-                        TweetsAdapter(tweetsList, this)
+
+
+        if (savedInstanceState != null) {
+            // The user has rotated the screen, restore state
+            val savedTweets: List<Tweet> = savedInstanceState.getSerializable(BUNDLE_KEY_TWEETS_LIST) as List<Tweet>
+
+            currentTweetsList.clear()
+            currentTweetsList.addAll(savedTweets)
+
+            recyclerView.adapter =
+                TweetsAdapter(savedTweets, this)
+        } else {
+            // First activity launch, call the network to retrieve Tweets
+            TwitterManager_Retrofit_Moshi().retrieveTweets(
+                address = address,
+                successCallback = { tweetsList ->
+
+                    // Keep track of current list of Tweets
+                    currentTweetsList.clear()
+                    currentTweetsList.addAll(tweetsList)
+
+                    // runOnUiThread is required if we're using OkHttp. Not needed
+                    // for Retrofit or AsyncTask.
+                    runOnUiThread {
+                        recyclerView.adapter =
+                            TweetsAdapter(tweetsList, this)
+                    }
+                },
+                errorCallback = {
+                    // runOnUiThread is required if we're using OkHttp. Not needed
+                    // for Retrofit or AsyncTask.
+                    runOnUiThread {
+                        Toast.makeText(this, "Failed to retrieve Tweets!", Toast.LENGTH_LONG).show()
+                    }
                 }
-            },
-            errorCallback = {
-                // runOnUiThread is required if we're using OkHttp. Not needed
-                // for Retrofit or AsyncTask.
-                runOnUiThread {
-                    Toast.makeText(this, "Failed to retrieve Tweets!", Toast.LENGTH_LONG).show()
-                }
-            }
-        )
+            )
+        }
+    }
+
+    /**
+     * The screen is going to be recreated, so let's save the current list of Tweets
+     * to restore after rotation.
+     */
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putSerializable(BUNDLE_KEY_TWEETS_LIST, ArrayList(currentTweetsList))
     }
 
     /**
