@@ -9,6 +9,8 @@ import android.text.TextWatcher
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ProgressBar
+import android.widget.Toast
+import com.google.firebase.auth.FirebaseAuth
 import com.gwu.android.androidtweets.ui.maps.ChooseLocationActivity
 import com.gwu.android.androidtweets.R
 
@@ -24,7 +26,11 @@ class LoginActivity : AppCompatActivity() {
 
     private lateinit var loginButton: Button
 
+    private lateinit var signUpButton: Button
+
     private lateinit var progressBar: ProgressBar
+
+    private lateinit var firebaseAuth: FirebaseAuth
 
     /**
      * Called when the Activity is being rendered for the first time, but before anything is
@@ -34,12 +40,15 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
+        firebaseAuth = FirebaseAuth.getInstance()
+
         // Get a SharedPreferences object, creating the file if it doesn't exist
         val preferences = getSharedPreferences(PREF_FILENAME, Context.MODE_PRIVATE)
 
         usernameEditText = findViewById(R.id.username)
         passwordEditText = findViewById(R.id.password)
         loginButton = findViewById(R.id.login)
+        signUpButton = findViewById(R.id.signUp)
         progressBar = findViewById(R.id.progressBar)
 
         usernameEditText.addTextChangedListener(textWatcher)
@@ -52,12 +61,45 @@ class LoginActivity : AppCompatActivity() {
         loginButton.setOnClickListener {
             // Save the inputted username (usually would be controlled by a Switch)
             val username = usernameEditText.text.toString()
-            preferences.edit().putString(PREF_SAVED_USERNAME, username).apply()
+            val password = passwordEditText.text.toString()
 
-            // Start the ChooseLocationActivity, sending it the inputted username
-            val intent = Intent(this, ChooseLocationActivity::class.java)
-            intent.putExtra(ChooseLocationActivity.INTENT_KEY_USERNAME, username)
-            startActivity(intent)
+            firebaseAuth.signInWithEmailAndPassword(username, password).addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val user = firebaseAuth.currentUser
+
+                    if (user != null) {
+                        Toast.makeText(this, "Logged in as ${user.email}!", Toast.LENGTH_SHORT).show()
+                    }
+
+                    preferences.edit().putString(PREF_SAVED_USERNAME, username).apply()
+
+                    // Start the ChooseLocationActivity, sending it the inputted username
+                    val intent = Intent(this, ChooseLocationActivity::class.java)
+                    intent.putExtra(ChooseLocationActivity.INTENT_KEY_USERNAME, username)
+                    startActivity(intent)
+                } else {
+                    val exception = task.exception
+                    Toast.makeText(this, "Login failed: $exception", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+        }
+
+        signUpButton.setOnClickListener {
+            val username = usernameEditText.text.toString()
+            val password = passwordEditText.text.toString()
+
+            firebaseAuth.createUserWithEmailAndPassword(username, password).addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val user = firebaseAuth.currentUser
+                    if (user != null) {
+                        Toast.makeText(this, "Account created for ${user.email}!", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    val exception = task.exception
+                    Toast.makeText(this, "Account creation failed! $exception", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
