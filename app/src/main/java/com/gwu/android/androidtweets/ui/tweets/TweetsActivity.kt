@@ -2,12 +2,19 @@ package com.gwu.android.androidtweets.ui.tweets
 
 import android.location.Address
 import android.os.Bundle
+import android.support.design.widget.FloatingActionButton
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.widget.ArrayAdapter
+import android.widget.EditText
 import android.widget.Toast
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.gwu.android.androidtweets.R
 import com.gwu.android.androidtweets.data.twitter.TwitterManager_Retrofit_Moshi
 import com.gwu.android.androidtweets.data.twitter.models.Tweet
@@ -25,6 +32,12 @@ class TweetsActivity : AppCompatActivity(),
 
     private lateinit var recyclerView: RecyclerView
 
+    private lateinit var tweetContent: EditText
+
+    private lateinit var addTweet: FloatingActionButton
+
+    private lateinit var firebaseDatabase: FirebaseDatabase
+
     private val currentTweetsList: MutableList<Tweet> = mutableListOf()
 
     /**
@@ -35,16 +48,43 @@ class TweetsActivity : AppCompatActivity(),
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_tweets)
 
+        firebaseDatabase = FirebaseDatabase.getInstance()
+
+
         // Retrieve the Address out of the intent. An Address isn't a primitive type, so we need to use
         // getSerializableExtra or getParcelableExtra (and an Address implements Parcelable).
         // TODO will cover this in a future lecture.
         val address: Address = intent.getParcelableExtra(INTENT_KEY_LOCATION)
-        title = getString(R.string.tweet_title, address.getAddressLine(0))
 
+        // If the user picks a location in the USA, the "adminArea" == state
+        val state: String = address.adminArea ?: "Unknown"
+
+        // The point in the Firebase DB where we want to read / write
+        val firebasePath = "tweets/$state"
+
+        val stateReference = firebaseDatabase.getReference(firebasePath)
+
+
+        title = getString(R.string.tweet_title, state)
+
+        tweetContent = findViewById(R.id.tweet_content)
+        addTweet = findViewById(R.id.add_tweet)
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
+        addTweet.setOnClickListener {
+            // Post the Tweet to Firebase
+            val content = tweetContent.text.toString()
+            if (content.isNotEmpty()) {
+                val currentUser = FirebaseAuth.getInstance().currentUser
+                val email = currentUser!!.email!!
+                val handle = email
+                val profilePictureUrl = ""
+                val tweet = Tweet(email, handle, content, profilePictureUrl)
 
+                stateReference.push().setValue(tweet)
+            }
+        }
 
         if (savedInstanceState != null) {
             // The user has rotated the screen, restore state
@@ -56,30 +96,61 @@ class TweetsActivity : AppCompatActivity(),
             recyclerView.adapter =
                 TweetsAdapter(savedTweets, this)
         } else {
-            // First activity launch, call the network to retrieve Tweets
-            TwitterManager_Retrofit_Moshi().retrieveTweets(
-                address = address,
-                successCallback = { tweetsList ->
 
-                    // Keep track of current list of Tweets
-                    currentTweetsList.clear()
-                    currentTweetsList.addAll(tweetsList)
-
-                    // runOnUiThread is required if we're using OkHttp. Not needed
-                    // for Retrofit or AsyncTask.
-                    runOnUiThread {
-                        recyclerView.adapter =
-                            TweetsAdapter(tweetsList, this)
-                    }
-                },
-                errorCallback = {
-                    // runOnUiThread is required if we're using OkHttp. Not needed
-                    // for Retrofit or AsyncTask.
-                    runOnUiThread {
-                        Toast.makeText(this, "Failed to retrieve Tweets!", Toast.LENGTH_LONG).show()
-                    }
+            stateReference.addValueEventListener(object : ValueEventListener {
+                override fun onCancelled(databaseError: DatabaseError) {
+                    Toast.makeText(
+                        this@TweetsActivity,
+                        "Failed to retrieve Firebase! Error: ${databaseError.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
-            )
+
+                override fun onDataChange(dataSnapshot: DataSnapshot) {
+                    currentTweetsList.clear()
+
+                    dataSnapshot.children.forEach { data ->
+                        val tweet: Tweet? = data.getValue(Tweet::class.java)
+                        if (tweet != null) {
+                            currentTweetsList.add(tweet)
+                        }
+                    }
+
+                    recyclerView.adapter = TweetsAdapter(
+                        tweets = currentTweetsList,
+                        rowClickListener = this@TweetsActivity
+                    )
+
+                }
+
+            })
+
+
+
+            // Twitter Integration
+//            TwitterManager_Retrofit_Moshi().retrieveTweets(
+//                address = address,
+//                successCallback = { tweetsList ->
+//
+//                    // Keep track of current list of Tweets
+//                    currentTweetsList.clear()
+//                    currentTweetsList.addAll(tweetsList)
+//
+//                    // runOnUiThread is required if we're using OkHttp. Not needed
+//                    // for Retrofit or AsyncTask.
+//                    runOnUiThread {
+//                        recyclerView.adapter =
+//                            TweetsAdapter(tweetsList, this)
+//                    }
+//                },
+//                errorCallback = {
+//                    // runOnUiThread is required if we're using OkHttp. Not needed
+//                    // for Retrofit or AsyncTask.
+//                    runOnUiThread {
+//                        Toast.makeText(this, "Failed to retrieve Tweets!", Toast.LENGTH_LONG).show()
+//                    }
+//                }
+//            )
         }
     }
 

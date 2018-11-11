@@ -10,7 +10,10 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.Toast
+import com.crashlytics.android.Crashlytics
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.gwu.android.androidtweets.ui.maps.ChooseLocationActivity
 import com.gwu.android.androidtweets.R
 
@@ -32,6 +35,8 @@ class LoginActivity : AppCompatActivity() {
 
     private lateinit var firebaseAuth: FirebaseAuth
 
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
+
     /**
      * Called when the Activity is being rendered for the first time, but before anything is
      * shown to the user.
@@ -40,6 +45,7 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
+        firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         firebaseAuth = FirebaseAuth.getInstance()
 
         // Get a SharedPreferences object, creating the file if it doesn't exist
@@ -65,6 +71,9 @@ class LoginActivity : AppCompatActivity() {
 
             firebaseAuth.signInWithEmailAndPassword(username, password).addOnCompleteListener { task ->
                 if (task.isSuccessful) {
+
+                    firebaseAnalytics.logEvent("login_success", null)
+
                     val user = firebaseAuth.currentUser
 
                     if (user != null) {
@@ -79,6 +88,15 @@ class LoginActivity : AppCompatActivity() {
                     startActivity(intent)
                 } else {
                     val exception = task.exception
+                    val errorType = if (exception is FirebaseAuthInvalidCredentialsException)
+                        "invalid credentials" else "network connection"
+
+                    // Acts similar to an Intent
+                    val bundle = Bundle()
+                    bundle.putString("error_type", errorType)
+
+                    firebaseAnalytics.logEvent("login_failed", bundle)
+
                     Toast.makeText(this, "Login failed: $exception", Toast.LENGTH_SHORT).show()
                 }
             }
