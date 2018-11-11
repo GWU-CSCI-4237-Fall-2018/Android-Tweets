@@ -7,4 +7,7 @@ data class Tweet(
     val handle: String,
     val content: String,
     val iconUrl: String
-) : Serializable
+) : Serializable {
+    // Empty secondary constructor -- Kotlin mandates that you call your "primary" constructor
+    constructor() : this("","","","")
+}
