@@ -1,10 +1,20 @@
 package com.gwu.android.androidtweets.ui.login
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
+import android.location.Address
+import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v4.app.NotificationCompat
+import android.support.v4.app.NotificationManagerCompat
+import android.support.v4.app.TaskStackBuilder
 import android.text.Editable
+import android.text.Html
 import android.text.TextWatcher
 import android.widget.Button
 import android.widget.EditText
@@ -14,8 +24,11 @@ import com.crashlytics.android.Crashlytics
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.gwu.android.androidtweets.ui.maps.ChooseLocationActivity
 import com.gwu.android.androidtweets.R
+import com.gwu.android.androidtweets.ui.tweets.TweetsActivity
+import java.util.*
 
 class LoginActivity : AppCompatActivity() {
 
@@ -44,6 +57,7 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
+        createNotificationChannel()
 
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         firebaseAuth = FirebaseAuth.getInstance()
@@ -113,6 +127,47 @@ class LoginActivity : AppCompatActivity() {
                     if (user != null) {
                         Toast.makeText(this, "Account created for ${user.email}!", Toast.LENGTH_SHORT).show()
                     }
+
+                    val loginIntent = Intent(this, LoginActivity::class.java)
+                    loginIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
+
+                    val loginPendingIntent = PendingIntent.getActivity(
+                        this,
+                        0,
+                        loginIntent,
+                        0
+                    )
+
+                    val address = Address(Locale.ENGLISH)
+                    address.adminArea = "Virginia"
+                    address.latitude = 38.8950151
+                    address.longitude = -77.0732913
+
+                    val tweetsIntent = Intent(this, TweetsActivity::class.java)
+                    tweetsIntent.putExtra(TweetsActivity.INTENT_KEY_LOCATION, address)
+
+                    // Builder which will also build the intents to launch the
+                    // previous activities when the user presses back
+                    val tweetsPendingIntentBuilder = TaskStackBuilder.create(this)
+                    tweetsPendingIntentBuilder.addNextIntentWithParentStack(tweetsIntent)
+
+                    // Create the actual PendingIntent from the builder
+                    val tweetsPendingIntent = tweetsPendingIntentBuilder.getPendingIntent(
+                        0,
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                    )
+
+                    val mBuilder = NotificationCompat.Builder(this, "default")
+                        .setSmallIcon(R.drawable.ic_check_white)
+                        .setContentTitle("Android Tweets")
+                        .setContentText("Welcome to Android Tweets!")
+                        .setContentIntent(loginPendingIntent)
+                        .setAutoCancel(true)
+                        .addAction(0, "Go To Virginia", tweetsPendingIntent)
+
+
+                    NotificationManagerCompat.from(this).notify(0, mBuilder.build())
+
                 } else {
                     val exception = task.exception
                     Toast.makeText(this, "Account creation failed! $exception", Toast.LENGTH_SHORT).show()
@@ -120,6 +175,23 @@ class LoginActivity : AppCompatActivity() {
             }
         }
     }
+
+    private fun createNotificationChannel() {
+        // Only needed for Android Oreo and higher
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Default Notifications"
+            val descriptionText = "The app's default notification set"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel("default", name, importance).apply {
+                description = descriptionText
+            }
+            // Register the channel with the system
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
 
     /**
      * A [TextWatcher] is set on an [EditText] using [EditText.addTextChangedListener] which

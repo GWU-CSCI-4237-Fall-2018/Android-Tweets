@@ -9,6 +9,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.gwu.android.androidtweets.R
 import com.gwu.android.androidtweets.data.twitter.models.Tweet
+import com.squareup.picasso.Picasso
 
 /**
  * Adapts our list of Tweet model objects to a list of rows on the UI.
@@ -56,6 +57,13 @@ class TweetsAdapter(
         holder.usernameTextView.text = currentTweet.username
         holder.handleTextView.text = currentTweet.handle
         holder.contentTextView.text = currentTweet.content
+
+        // So we can see loaded from network vs. cache
+        Picasso.get().setIndicatorsEnabled(true)
+
+        Picasso.get()
+            .load(currentTweet.iconUrl) // URL
+            .into(holder.iconImageView) // ImageView (destination)
 
         holder.cardView.setOnClickListener {
             rowClickListener.onRowItemClicked(currentTweet)
