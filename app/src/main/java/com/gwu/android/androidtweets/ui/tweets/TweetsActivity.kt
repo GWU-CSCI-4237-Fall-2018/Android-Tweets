@@ -97,60 +97,48 @@ class TweetsActivity : AppCompatActivity(),
                 TweetsAdapter(savedTweets, this)
         } else {
 
-//            stateReference.addValueEventListener(object : ValueEventListener {
-//                override fun onCancelled(databaseError: DatabaseError) {
-//                    Toast.makeText(
-//                        this@TweetsActivity,
-//                        "Failed to retrieve Firebase! Error: ${databaseError.message}",
-//                        Toast.LENGTH_LONG
-//                    ).show()
-//                }
-//
-//                override fun onDataChange(dataSnapshot: DataSnapshot) {
-//                    currentTweetsList.clear()
-//
-//                    dataSnapshot.children.forEach { data ->
-//                        val tweet: Tweet? = data.getValue(Tweet::class.java)
-//                        if (tweet != null) {
-//                            currentTweetsList.add(tweet)
-//                        }
-//                    }
-//
-//                    recyclerView.adapter = TweetsAdapter(
-//                        tweets = currentTweetsList,
-//                        rowClickListener = this@TweetsActivity
-//                    )
-//
-//                }
-//
-//            })
-
-
-
-            // Twitter Integration
-            TwitterManager_Retrofit_Moshi().retrieveTweets(
-                address = address,
-                successCallback = { tweetsList ->
-
-                    // Keep track of current list of Tweets
-                    currentTweetsList.clear()
-                    currentTweetsList.addAll(tweetsList)
-
-                    // runOnUiThread is required if we're using OkHttp. Not needed
-                    // for Retrofit or AsyncTask.
-                    runOnUiThread {
-                        recyclerView.adapter =
-                            TweetsAdapter(tweetsList, this)
-                    }
-                },
-                errorCallback = {
-                    // runOnUiThread is required if we're using OkHttp. Not needed
-                    // for Retrofit or AsyncTask.
-                    runOnUiThread {
-                        Toast.makeText(this, "Failed to retrieve Tweets!", Toast.LENGTH_LONG).show()
-                    }
+            stateReference.addValueEventListener(object : ValueEventListener {
+                override fun onCancelled(databaseError: DatabaseError) {
+                    Toast.makeText(
+                        this@TweetsActivity,
+                        "Failed to retrieve Firebase! Error: ${databaseError.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
-            )
+
+                override fun onDataChange(dataSnapshot: DataSnapshot) {
+                    currentTweetsList.clear()
+
+                    dataSnapshot.children.forEach { data ->
+                        val tweet: Tweet? = data.getValue(Tweet::class.java)
+                        if (tweet != null) {
+                            currentTweetsList.add(tweet)
+                        }
+                    }
+
+                    recyclerView.adapter = TweetsAdapter(
+                        tweets = currentTweetsList,
+                        rowClickListener = this@TweetsActivity
+                    )
+
+                }
+
+            })
+
+
+
+            GlobalScope.launch(Dispatchers.Main) {
+                val tweetsResult = TwitterManager_Retrofit_Moshi().retrieveTweets(address)
+                if (tweetsResult is Result.Failure) {
+                    Toast.makeText(this@TweetsActivity, "Failed to retrieve Tweets!", Toast.LENGTH_LONG).show()
+                } else {
+                    tweetsResult as Result.Success
+                    currentTweetsList.clear()
+                    currentTweetsList.addAll(tweetsResult.data)
+                        recyclerView.adapter =
+                            TweetsAdapter(tweetsResult.data, this@TweetsActivity)
+                }
+            }
         }
     }
 

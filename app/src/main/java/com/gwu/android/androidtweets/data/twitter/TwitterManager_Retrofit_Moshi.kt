@@ -1,14 +1,13 @@
 package com.gwu.android.androidtweets.data.twitter
 
 import android.location.Address
+import com.gwu.android.androidtweets.data.Result
 import com.gwu.android.androidtweets.data.twitter.models.Tweet
 import com.gwu.android.androidtweets.data.twitter.models.TwitterOAuthToken
-import com.gwu.android.androidtweets.data.twitter.response.oauth.OAuthResponse
-import com.gwu.android.androidtweets.data.twitter.response.search.SearchTweetsResponse
+import com.gwu.android.androidtweets.ui.login.PREF_FILENAME
+import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Call
-import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
@@ -41,96 +40,76 @@ class TwitterManager_Retrofit_Moshi {
         .client(okHttpClient)
         .baseUrl("https://api.twitter.com/")
         .addConverterFactory(MoshiConverterFactory.create())
+        .addCallAdapterFactory(CoroutineCallAdapterFactory())
         .build()
 
     val twitterService: TwitterService = retrofit.create(TwitterService::class.java)
 
 
-    private fun retrieveOAuthToken(
-        successCallback: (TwitterOAuthToken) -> Unit,
-        errorCallback: (Exception) -> Unit
-    ) {
+    private suspend fun retrieveOAuthToken(): Result<TwitterOAuthToken> {
         val currentToken: TwitterOAuthToken? = oAuthToken
         if (currentToken != null) {
-            successCallback(currentToken)
-            return
+            return Result.Success(currentToken)
         }
 
-        // TODO read from a gitignored string file, but I've already shared this alround
+        // TODO read from a gitignored string file, but I've already shared this around
         val combinedKey =
             "bFdLdGZTMWJmeUlTeWlyWEsyck43N2NQMzpXZXpRaGsxZnhFaElFbTN2MWQ0T291SmwwQkNvTlh0d2F4dzJPSmZhN3NvRERVcHg5Tg=="
 
-        twitterService.oAuth("Basic $combinedKey", "client_credentials")
-            .enqueue(object : retrofit2.Callback<OAuthResponse> {
-                override fun onFailure(call: Call<OAuthResponse>, t: Throwable) {
-                    errorCallback(Exception(t))
-                }
+        val response = twitterService.oAuth(
+            "Basic $combinedKey",
+            "client_credentials"
+        ).await()
 
-                override fun onResponse(
-                    call: Call<OAuthResponse>,
-                    response: Response<OAuthResponse>
-                ) {
-                    val body = response.body()
-                    if (response.isSuccessful && body != null) {
-                        successCallback(
-                            TwitterOAuthToken(body.accessToken)
-                        )
-                    } else {
-                        errorCallback(Exception("Twitter OAuth call failed"))
-                    }
-                }
-            })
+        val body = response.body()
 
+        return if (response.isSuccessful && body != null) {
+            Result.Success(TwitterOAuthToken(body.accessToken))
+        } else {
+            Result.Failure(Exception("OAuth was unsuccessful"))
+        }
     }
 
-    fun retrieveTweets(
-        address: Address,
-        successCallback: (List<Tweet>) -> Unit,
-        errorCallback: (Exception) -> Unit
-    ) {
-        retrieveOAuthToken(
-            successCallback = { token ->
-                val lat = address.latitude
-                val lon = address.longitude
-                val topic = "Android"
-                val radius = "30mi"
-                twitterService.searchTweets(
-                    authorization = "Bearer ${token.token}",
-                    topic = topic,
-                    geocode = "$lat,$lon,$radius"
-                ).enqueue(object : retrofit2.Callback<SearchTweetsResponse> {
-                    override fun onFailure(call: Call<SearchTweetsResponse>, t: Throwable) {
-                        errorCallback(Exception(t))
-                    }
+    suspend fun retrieveTweets(
+        address: Address
+    ): Result<List<Tweet>> {
 
-                    override fun onResponse(
-                        call: Call<SearchTweetsResponse>,
-                        response: Response<SearchTweetsResponse>
-                    ) {
-                        val body = response.body()
-                        if (response.isSuccessful && body != null) {
-                            val statuses = body.statuses
-                            val convertedTweets: List<Tweet> = statuses.map { status ->
-                                val content = status.text
-                                val user = status.user
-                                val name = user.name
-                                val handle = user.screenName
-                                val profilePictureUrl = user.profileImageUrl
-                                Tweet(
-                                    username = name,
-                                    handle = handle,
-                                    content = content,
-                                    iconUrl = profilePictureUrl
-                                )
-                            }
-                            successCallback(convertedTweets)
-                        } else {
-                            errorCallback(Exception("Twitter OAuth call failed"))
-                        }
-                    }
-                })
-            },
-            errorCallback = errorCallback
-        )
+        val oAuthTokenResult = retrieveOAuthToken()
+        if (oAuthTokenResult is Result.Failure) {
+            return oAuthTokenResult
+        }
+
+        val oAuthToken = (oAuthTokenResult as Result.Success).data
+
+        val lat = address.latitude
+        val lon = address.longitude
+        val topic = "Android"
+        val radius = "30mi"
+        val response = twitterService.searchTweets(
+            authorization = "Bearer ${oAuthToken.token}",
+            topic = topic,
+            geocode = "$lat,$lon,$radius"
+        ).await()
+
+        val body = response.body()
+        if (response.isSuccessful && body != null) {
+            val statuses = body.statuses
+            val convertedStatuses = statuses.map { status ->
+                val content = status.text
+                val user = status.user
+                val name = user.name
+                val handle = user.screenName
+                val profilePictureUrl = user.profileImageUrl
+                Tweet(
+                    username = name,
+                    handle = handle,
+                    content = content,
+                    iconUrl = profilePictureUrl
+                )
+            }
+            return Result.Success(convertedStatuses)
+        } else {
+            return Result.Failure(Exception("Failed to parse Tweets response"))
+        }
     }
 }
